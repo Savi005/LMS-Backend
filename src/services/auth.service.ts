@@ -1,8 +1,10 @@
 import bcrypt from "bcrypt";
-import { RegisterDto, UserResponseDto } from "../dtos/auth.dto";
+import { LoginDto, RegisterDto, UserResponseDto } from "../dtos/auth.dto";
 import { ConflictError } from "../errors/ConflictError";
 import { UserRepository } from "../repositories/user.repository";
 import { logger } from "../config/logger";
+import { generateAccessToken } from "../utils/jwt";
+import { UnauthorizedError } from "../errors/UnauthorizedError";
 
 export class AuthService {
 
@@ -39,5 +41,31 @@ export class AuthService {
         };
 
     }
+
+async login(data: LoginDto){ 
+  const user = await this.repository.findByEmailWithPassword(data.email);
+
+  if (!user) {
+    throw new UnauthorizedError("Invalid credentials");
+  }
+
+  const isMatch = await bcrypt.compare(
+    data.password,
+    user.password
+  );
+
+  if (!isMatch) {
+    throw new UnauthorizedError("Invalid credentials");
+  }
+
+  const token = generateAccessToken(
+    user.id,
+    user.role
+  );
+
+  return {
+    accessToken: token,
+  };
+}
 
 }

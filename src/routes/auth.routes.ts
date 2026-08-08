@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerSchema } from "../validators/auth.validator";
+import { loginSchema, registerSchema } from "../validators/auth.validator";
 import { validate } from "../middlewares/validate";
 import { UserRepository } from "../repositories/user.repository";
 import { AuthService } from "../services/auth.service";
@@ -22,5 +22,17 @@ validate(registerSchema),
 controller.register
 
 );
+
+router.post(
+
+"/login",
+
+validate(loginSchema),
+
+controller.login
+
+);
+
+
 
 export default router;

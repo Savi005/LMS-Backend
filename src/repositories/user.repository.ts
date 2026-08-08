@@ -13,4 +13,8 @@ export class UserRepository {
 
     }
 
+    async findByEmailWithPassword(email:string){
+        return User.findOne({email}).select("+password");
+    }
+
 }

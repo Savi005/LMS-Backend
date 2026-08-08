@@ -11,3 +11,8 @@ export interface UserResponseDto {
     email: string;
     role: "student" | "teacher" | "admin";
 }
+
+export interface LoginDto{
+    email:string;
+    password:string;
+}
