@@ -1,19 +1,30 @@
 import jwt from "jsonwebtoken";
+import { env } from "../config/env";
+import type { SignOptions } from "jsonwebtoken";
 
-export function generateAccessToken(
-    id:string,
-    role:String
-){
-    return jwt.sign({id, role},
-         process.env.JWT_ACCESS_SECRET!, 
-         {expiresIn:"15m"});
+export interface AccessTokenPayload {
+  userId: string;
+  role: string;
 }
 
-export function generateRefreshToken(
-    id:string,
-){
-    return jwt.sign({id},
-            process.env.JWT_REFRESH_SECRET!, 
-            {expiresIn:"7d"});
-            
-}
+export const generateAccessToken = (payload: AccessTokenPayload): string => {
+  return jwt.sign(payload, env.jwtAccessSecret, {
+    expiresIn: env.jwtAccessExpiresIn as SignOptions["expiresIn"],
+  });
+};
+
+export const generateRefreshToken = (payload: AccessTokenPayload): string => {
+  return jwt.sign(payload, env.jwtRefreshSecret, {
+    expiresIn: env.jwtRefreshExpiresIn as SignOptions["expiresIn"],
+  });
+};
+
+export const verifyRefreshToken = (token: string): AccessTokenPayload => {
+  return jwt.verify(token, env.jwtRefreshSecret) as AccessTokenPayload;
+};
+
+export const generateRefreshTokenExpirationDate = (): Date => {
+  const expirationMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+  return new Date(Date.now() + expirationMs);
+};

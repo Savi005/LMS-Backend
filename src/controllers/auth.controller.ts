@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/auth.service";
+import { RefreshTokenDto } from "../dtos/auth.dto";
 
 export class AuthController{
 
@@ -55,5 +56,25 @@ export class AuthController{
 
         }
     }
+
+        refresh = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+            const data = req.body as RefreshTokenDto;
+
+            const tokens = await this.service.refresh(data);
+
+            res.status(200).json({
+                success: true,
+                message: "Token refreshed successfully",
+                data: tokens
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 
 }
