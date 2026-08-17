@@ -1,71 +1,183 @@
 import bcrypt from "bcrypt";
-import { LoginDto, RegisterDto, UserResponseDto } from "../dtos/auth.dto";
+
+import {
+    LoginDto,
+    RegisterDto,
+    RefreshTokenDto,
+    UserResponseDto,
+} from "../dtos/auth.dto";
+
 import { ConflictError } from "../errors/ConflictError";
-import { UserRepository } from "../repositories/user.repository";
-import { logger } from "../config/logger";
-import { generateAccessToken } from "../utils/jwt";
 import { UnauthorizedError } from "../errors/UnauthorizedError";
 
+import { IUserRepository } from "../interfaces/repositories/user.repository.interface";
+import { IRefreshTokenRepository } from "../interfaces/repositories/refresh-token.repository.interface";
+
+import { logger } from "../config/logger";
+
+import {
+    generateAccessToken,
+    generateRefreshToken,
+    verifyRefreshToken,
+    generateRefreshTokenExpirationDate,
+} from "../utils/jwt";
+
+import { hashToken } from "../utils/hash";
+
 export class AuthService {
-
     constructor(
-        private repository:UserRepository
-    ){}
+        private readonly userRepository: IUserRepository,
+        private readonly refreshTokenRepository: IRefreshTokenRepository
+    ) {}
 
-    async register(data:RegisterDto):Promise<UserResponseDto>{
+    // =========================
+    // REGISTER
+    // =========================
 
-        const existingUser=await this.repository.findByEmail(data.email);
+    async register(data: RegisterDto): Promise<UserResponseDto> {
+        const existingUser = await this.userRepository.findByEmail(
+            data.email
+        );
 
-        if(existingUser){
+        if (existingUser) {
             throw new ConflictError("Email already exists");
         }
 
-        const hashedPassword=await bcrypt.hash(data.password,10);
+        const hashedPassword = await bcrypt.hash(data.password, 10);
 
-        const user=await this.repository.create({
+        const user = await this.userRepository.create({
             ...data,
-            password:hashedPassword
+            password: hashedPassword,
         });
 
-        logger.info({
-            email:user.email
-        },"User Registered");
+        logger.info(
+            {
+                email: user.email,
+            },
+            "User Registered"
+        );
 
-        return{
-
-            id:user.id,
-            name:user.name,
-            email:user.email,
-            role:user.role
-
+        return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
         };
-
     }
 
-async login(data: LoginDto){ 
-  const user = await this.repository.findByEmailWithPassword(data.email);
+    // =========================
+    // LOGIN
+    // =========================
 
-  if (!user) {
-    throw new UnauthorizedError("Invalid credentials");
-  }
+    async login(data: LoginDto) {
+        const user =
+            await this.userRepository.findByEmailWithPassword(
+                data.email
+            );
 
-  const isMatch = await bcrypt.compare(
-    data.password,
-    user.password
-  );
+        if (!user) {
+            throw new UnauthorizedError("Invalid credentials");
+        }
 
-  if (!isMatch) {
-    throw new UnauthorizedError("Invalid credentials");
-  }
+        const isMatch = await bcrypt.compare(
+            data.password,
+            user.password
+        );
 
-  const token = generateAccessToken(
-    user.id,
-    user.role
-  );
+        if (!isMatch) {
+            throw new UnauthorizedError("Invalid credentials");
+        }
 
-  return {
-    accessToken: token,
-  };
-}
+        const payload = {
+            userId: user.id,
+            role: user.role,
+        };
 
+        const accessToken = generateAccessToken(payload);
+
+        const refreshToken = generateRefreshToken(payload);
+
+        const tokenHash = hashToken(refreshToken);
+
+        const expiresAt =
+            generateRefreshTokenExpirationDate();
+
+        await this.refreshTokenRepository.create(
+            user.id,
+            tokenHash,
+            expiresAt
+        );
+
+        return {
+            accessToken,
+            refreshToken,
+        };
+    }
+
+    // =========================
+    // REFRESH TOKEN
+    // =========================
+
+    async refresh(data: RefreshTokenDto) {
+        let payload;
+
+        try {
+            payload = verifyRefreshToken(data.refreshToken);
+        } catch {
+            throw new UnauthorizedError(
+                "Invalid refresh token"
+            );
+        }
+
+        const tokenHash = hashToken(data.refreshToken);
+
+        const storedToken =
+            await this.refreshTokenRepository.findByTokenHash(
+                tokenHash
+            );
+
+        if (!storedToken) {
+            throw new UnauthorizedError(
+                "Invalid refresh token"
+            );
+        }
+
+        // Delete old refresh token
+        await this.refreshTokenRepository.deleteById(
+            storedToken.id
+        );
+
+        const tokenPayload = {
+            userId: payload.userId,
+            role: payload.role,
+        };
+
+        // Generate new access token
+        const accessToken =
+            generateAccessToken(tokenPayload);
+
+        // Generate new refresh token
+        const refreshToken =
+            generateRefreshToken(tokenPayload);
+
+        // Hash new refresh token before storing
+        const newTokenHash =
+            hashToken(refreshToken);
+
+        // Calculate new expiration
+        const expiresAt =
+            generateRefreshTokenExpirationDate();
+
+        // Store new refresh token
+        await this.refreshTokenRepository.create(
+            payload.userId,
+            newTokenHash,
+            expiresAt
+        );
+
+        return {
+            accessToken,
+            refreshToken,
+        };
+    }
 }

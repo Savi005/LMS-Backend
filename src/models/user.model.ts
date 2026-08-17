@@ -1,6 +1,17 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, type HydratedDocument } from "mongoose";
 
-const userSchema = new Schema(
+export interface IUser {
+  name: string;
+  email: string;
+  password: string;
+  role: "student" | "teacher" | "admin";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type UserDocument = HydratedDocument<IUser>;
+
+const userSchema = new Schema<IUser>(
   {
     name: {
       type: String,
@@ -33,4 +44,4 @@ const userSchema = new Schema(
   }
 );
 
-export const User = model("User", userSchema);
+export const User = model<IUser>("User", userSchema);
