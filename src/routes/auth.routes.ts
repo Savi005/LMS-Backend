@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginSchema, registerSchema } from "../validators/auth.validator";
+import { loginSchema, logoutSchema, registerSchema } from "../validators/auth.validator";
 import { validate } from "../middlewares/validate";
 import { UserRepository } from "../repositories/user.repository";
 import { RefreshTokenRepository } from "../repositories/refresh-token.repository";
@@ -39,6 +39,11 @@ router.post(
   "/refresh",
   validate(refreshTokenSchema),
   controller.refresh.bind(controller)
+);
+router.post(
+  "/logout",
+  validate(logoutSchema),
+  controller.logout.bind(controller)
 );
 
 

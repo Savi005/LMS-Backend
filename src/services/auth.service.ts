@@ -5,6 +5,7 @@ import {
     RegisterDto,
     RefreshTokenDto,
     UserResponseDto,
+    LogoutDto,
 } from "../dtos/auth.dto";
 
 import { ConflictError } from "../errors/ConflictError";
@@ -180,4 +181,44 @@ export class AuthService {
             refreshToken,
         };
     }
+
+    async logout(data: LogoutDto) {
+        const {refreshToken} = data;
+
+        let payload;
+        
+        try {
+            payload = verifyRefreshToken(refreshToken);
+        } catch {
+            throw new UnauthorizedError(
+                "Invalid refresh token"
+            );
+        }
+
+        const tokenHash = hashToken(refreshToken);
+        
+        const storedToken =
+            await this.refreshTokenRepository.findByTokenHash(
+                tokenHash
+            );
+
+            if (!storedToken) {
+                throw new UnauthorizedError(
+                    "Invalid refresh token"
+                );
+            }
+            
+        // Delete the refresh token from the database
+        await this.refreshTokenRepository.deleteById(
+            storedToken.id
+        );
+
+        logger.info(
+            {
+                userId: payload.userId,
+            },
+            "User Logged Out"
+        );
+    }
+
 }

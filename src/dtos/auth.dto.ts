@@ -20,3 +20,7 @@ export interface LoginDto{
 export interface RefreshTokenDto {
     refreshToken: string;
 }
+
+export interface LogoutDto {
+    refreshToken: string;
+}
