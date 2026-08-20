@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { AuthService } from "../services/auth.service";
-import { RefreshTokenDto } from "../dtos/auth.dto";
+import { ChangePasswordDto, RefreshTokenDto } from "../dtos/auth.dto";
 
 export class AuthController{
 
@@ -95,5 +95,29 @@ export class AuthController{
             next(error);
         }
     }
+
+        changePassword = async (
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ) => {
+        try {
+
+            const data = req.body as ChangePasswordDto;
+
+            await this.service.changePassword(
+                req.user!.userId,
+                data
+            );
+
+            res.status(200).json({
+                success: true,
+                message: "Password changed successfully"
+            });
+
+        } catch (error) {
+            next(error);
+        }
+    };
 
 }

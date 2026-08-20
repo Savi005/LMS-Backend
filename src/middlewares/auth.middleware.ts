@@ -2,11 +2,12 @@ import jwt from "jsonwebtoken";
 import { UnauthorizedError } from "../errors/UnauthorizedError";
 import { Request, Response, NextFunction } from "express";
 import { ForbiddenError } from "../errors/ForbiddenError";
+import { env } from "../config/env";
 
 export const authenticate = (
-  req: any,
-  res: any,
-  next: any
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) => {
 
   const authHeader =
@@ -34,7 +35,10 @@ export const authenticate = (
       jwt.verify(
         token,
         process.env.JWT_ACCESS_SECRET!
-      );
+      )as {
+            userId: string;
+            role: string;
+        };
 
     req.user = payload;
 

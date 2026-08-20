@@ -6,6 +6,7 @@ import {
     RefreshTokenDto,
     UserResponseDto,
     LogoutDto,
+    ChangePasswordDto,
 } from "../dtos/auth.dto";
 
 import { ConflictError } from "../errors/ConflictError";
@@ -218,6 +219,33 @@ export class AuthService {
                 userId: payload.userId,
             },
             "User Logged Out"
+        );
+    }
+
+    async changePassword(userId:string,data:ChangePasswordDto){
+        
+        const user = await this.userRepository.findByIdWithPassword(userId);
+
+        if(!user){
+            throw new UnauthorizedError("User not found");
+        }
+        
+        const isMatch = await bcrypt.compare(data.currentPassword,user.password);
+        
+        if(!isMatch){
+            throw new UnauthorizedError("Current password is incorrect");
+        }
+
+        const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+        await this.userRepository.updatePassword(userId, hashedPassword);
+
+        await this.refreshTokenRepository.deleteAllByUserId(userId);
+        
+        logger.info(
+            {
+                userId: userId,
+            },
+            "User Password Changed"
         );
     }
 

@@ -14,4 +14,15 @@ export class UserRepository implements IUserRepository {
   async findByEmailWithPassword(email: string) {
     return User.findOne({ email }).select("+password");
   }
+  async findById(id: string) {
+    return User.findById(id);
+  }
+
+  async findByIdWithPassword(id: string) {
+    return User.findById(id).select("+password");
+  }
+
+  async updatePassword(userId: string, hashedPassword: string) {
+    await User.findByIdAndUpdate(userId, { password: hashedPassword });
+  }
 }
