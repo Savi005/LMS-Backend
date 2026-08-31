@@ -3,6 +3,7 @@ import { UnauthorizedError } from "../errors/UnauthorizedError";
 import { Request, Response, NextFunction } from "express";
 import { ForbiddenError } from "../errors/ForbiddenError";
 import { env } from "../config/env";
+import { UserRole } from "../types/role";
 
 export const authenticate = (
   req: Request,
@@ -31,16 +32,19 @@ export const authenticate = (
 
   try {
 
-    const payload =
-      jwt.verify(
-        token,
-        process.env.JWT_ACCESS_SECRET!
-      )as {
-            userId: string;
-            role: string;
-        };
+    const payload = jwt.verify(token, env.jwtAccessSecret) as {
+      userId?: string;
+      role?: string;
+    };
 
-    req.user = payload;
+    if (!payload.userId || !payload.role) {
+      return next(new UnauthorizedError("Invalid token"));
+    }
+
+    req.user = {
+      userId: payload.userId,
+      role: payload.role as UserRole,
+    };
 
     next();
 
@@ -67,10 +71,8 @@ export const authorize =
     res: Response,
     next: NextFunction
   ) => {
-    if (!roles.includes((req as any).user.role)) {
-      return next(
-        new ForbiddenError("Access denied")
-      );
+    if (!req.user || !roles.includes(req.user.role)) {
+      return next(new ForbiddenError("Access denied"));
     }
 
     next();

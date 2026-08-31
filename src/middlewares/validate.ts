@@ -3,9 +3,10 @@ import { ZodSchema } from "zod";
 import { ValidationError } from "../errors/ValidationError";
 
 export const validate =
-  (schema: ZodSchema) =>
+  (schema: ZodSchema, source: "body" | "params" = "body") =>
   (req: Request, res: Response, next: NextFunction) => {
-    const result = schema.safeParse(req.body);
+    const value = source === "params" ? req.params : req.body;
+    const result = schema.safeParse(value);
 
     if (!result.success) {
       return next(
@@ -13,7 +14,11 @@ export const validate =
       );
     }
 
-    req.body = result.data;
+    if (source === "params") {
+      req.params = result.data as Request["params"];
+    } else {
+      req.body = result.data;
+    }
 
     next();
   };

@@ -1,4 +1,4 @@
-import { IEmailService } from "../interfaces/email-service.interface";
+import { IEmailService } from "../interfaces/services/email-service.interface";
 
 export class EmailService implements IEmailService {
   async sendPasswordResetEmail(
