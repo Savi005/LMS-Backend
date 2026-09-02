@@ -4,6 +4,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes";
 import courseRoutes from "./routes/course.routes";
 import courseCategoryRoutes from "./routes/course-category.routes";
+import lessonRoutes from "./routes/lesson.routes";
 
 import healthRoutes from "./routes/health.routes";
 import { errorHandler } from "./middlewares/error.middleware";
@@ -17,9 +18,10 @@ app.use(express.json());
 app.use("/", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
+app.use("/api", lessonRoutes);
 app.use(errorHandler);
 app.use(
   "/course-categories",
-  courseCategoryRoutes
+  courseCategoryRoutes,
 );
 export default app;
