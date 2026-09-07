@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { objectIdSchema } from "./object-id.validator";
+
 export const createCourseSchema = z.object({
   title: z
     .string()
@@ -13,12 +15,7 @@ export const createCourseSchema = z.object({
     .min(10, "Description must be at least 10 characters")
     .max(5000, "Description must not exceed 5000 characters"),
 
-  categoryId: z
-    .string()
-    .regex(
-      /^[0-9a-fA-F]{24}$/,
-      "Invalid category ID"
-    ),
+  categoryId: objectIdSchema,
 });
 
 export const updateCourseSchema = z
@@ -37,13 +34,7 @@ export const updateCourseSchema = z
       .max(5000, "Description must not exceed 5000 characters")
       .optional(),
 
-    categoryId: z
-      .string()
-      .regex(
-        /^[0-9a-fA-F]{24}$/,
-        "Invalid category ID"
-      )
-      .optional(),
+    categoryId: objectIdSchema.optional(),
   })
   .refine(
     (data) => Object.keys(data).length > 0,

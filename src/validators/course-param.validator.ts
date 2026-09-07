@@ -1,10 +1,7 @@
 import { z } from "zod";
 
+import { objectIdSchema } from "./object-id.validator";
+
 export const courseIdParamSchema = z.object({
-  courseId: z
-    .string()
-    .regex(
-      /^[0-9a-fA-F]{24}$/,
-      "Invalid course ID"
-    ),
+  courseId: objectIdSchema,
 });

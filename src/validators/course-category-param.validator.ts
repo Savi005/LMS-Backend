@@ -1,11 +1,8 @@
 import { z } from "zod";
 
+import { objectIdSchema } from "./object-id.validator";
+
 export const categoryIdParamSchema =
   z.object({
-    categoryId: z
-      .string()
-      .regex(
-        /^[0-9a-fA-F]{24}$/,
-        "Invalid category ID"
-      ),
+    categoryId: objectIdSchema,
   });
