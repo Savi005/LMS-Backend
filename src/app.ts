@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth.routes";
 import courseRoutes from "./routes/course.routes";
 import courseCategoryRoutes from "./routes/course-category.routes";
 import lessonRoutes from "./routes/lesson.routes";
+import assignmentRoutes from "./routes/assignments.routes";
 import healthRoutes from "./routes/health.routes";
 import { errorHandler } from "./middlewares/error.middleware";
 import { createEnrollmentRoutes } from "./routes/enrollment.routes";
@@ -29,6 +30,7 @@ app.use("/", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api", lessonRoutes);
+app.use("/api", assignmentRoutes);
 app.use("/api/course-categories", courseCategoryRoutes);
 app.use("/api", createEnrollmentRoutes(enrollmentController));
 
