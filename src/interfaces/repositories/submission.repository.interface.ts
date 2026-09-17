@@ -32,4 +32,16 @@ export interface ISubmissionRepository {
     studentId: string,
     data: Partial<ISubmission>,
   ): Promise<SubmissionDocument>;
-}//update
+  //update
+
+  gradeSubmission(
+    submissionId: string,
+    data:{
+      score: number;
+      feedback?: string;
+      gradedBy: string;
+      gradedAt: Date;
+    }
+  ): Promise<SubmissionDocument | null>;
+}
+

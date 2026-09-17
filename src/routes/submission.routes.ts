@@ -12,6 +12,7 @@ import { validate } from "../middlewares/validate";
 
 import {
   createSubmissionSchema,
+  gradeSubmissionSchema,
 } from "../validators/submission.validator";
 
 export const createSubmissionRoutes = (
@@ -48,5 +49,13 @@ export const createSubmissionRoutes = (
     submissionController.getByAssignment,
   );
 
+  router.patch(
+    "/submissions/:submissionId/grade",
+    authenticate,
+    validate(gradeSubmissionSchema),
+    submissionController.grade,
+  );
+
   return router;
+
 };

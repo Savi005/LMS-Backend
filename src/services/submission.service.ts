@@ -32,8 +32,11 @@ import { AuthenticatedUser } from "../types/authenticated-user";
 import { ConflictError } from "../errors/ConflictError";
 import { NotFoundError } from "../errors/NotFoundError";
 import { ForbiddenError } from "../errors/ForbiddenError";
+import { ValidationError } from "../errors/ValidationError";
 
 import { logger } from "../config/logger";
+import { UserRole } from "../types/role";
+import { GradeSubmissionDto } from "../dtos/grade-submission.dto";
 
 export class SubmissionService
   implements ISubmissionService
@@ -318,6 +321,143 @@ export class SubmissionService
       );
     }
   }
+  async gradeSubmission(
+    userId:string,
+    role:UserRole,
+    submissionId:string,
+    data:GradeSubmissionDto
+)
+{
+
+
+if(
+    role !== "teacher" &&
+    role !== "admin"
+){
+
+    throw new ForbiddenError(
+        "Only teachers or admins can grade submissions"
+    );
+
+}
+
+
+
+const submission =
+    await this.submissionRepository
+        .findById(submissionId);
+
+
+
+if(!submission){
+
+    throw new NotFoundError(
+        "Submission not found"
+    );
+
+}
+
+
+
+const assignment =
+    await this.assignmentRepository
+        .findById(
+            submission.assignmentId.toString()
+        );
+
+
+
+if(!assignment){
+
+    throw new NotFoundError(
+        "Assignment not found"
+    );
+
+}
+
+
+
+const course =
+    await this.courseRepository
+        .findById(
+            assignment.courseId.toString()
+        );
+
+
+
+if(!course){
+
+    throw new NotFoundError(
+        "Course not found"
+    );
+
+}
+
+
+
+// ownership check
+
+if(
+    role === "teacher" &&
+    course.teacherId.toString() !== userId
+){
+
+    throw new ForbiddenError(
+        "You cannot grade submissions from this course"
+    );
+
+}
+
+
+
+// score validation
+
+if(
+    data.score > assignment.maxScore
+){
+
+    throw new ValidationError(
+        "Score cannot exceed maximum score"
+    );
+
+}
+
+
+
+const updatedSubmission =
+    await this.submissionRepository
+        .gradeSubmission(
+
+            submissionId,
+
+            {
+                score:data.score,
+
+                feedback:data.feedback,
+
+                gradedBy:userId,
+
+                gradedAt:new Date()
+            }
+
+        );
+
+
+
+if(!updatedSubmission){
+
+    throw new NotFoundError(
+        "Submission not found"
+    );
+
+}
+
+
+
+return this.toResponseDto(updatedSubmission);
+
+
+}
 
   private toResponseDto(
     submission: SubmissionDocument,
@@ -334,4 +474,6 @@ export class SubmissionService
       updatedAt: submission.updatedAt,
     };
   }
+  
+
 }

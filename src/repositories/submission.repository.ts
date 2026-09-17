@@ -79,4 +79,33 @@ export class SubmissionRepository
 
     return submission;
   }
+
+ async gradeSubmission(
+    submissionId:string,
+    data:{
+      score: number;
+      feedback?: string;
+      gradedBy: string;
+      gradedAt: Date;
+    }
+){
+
+    return Submission.findByIdAndUpdate(
+
+        submissionId,
+
+        {
+           score: data.score,
+           feedback: data.feedback,
+           gradedBy: data.gradedBy,
+           gradedAt: data.gradedAt
+        },
+
+        {
+            new:true
+        }
+
+    );
+
+}
 }

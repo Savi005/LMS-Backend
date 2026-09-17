@@ -5,6 +5,10 @@ export interface ISubmission {
   assignmentId: Types.ObjectId;
   content: string;
   submittedAt: Date;
+  score?: number;
+  feedback?: string;
+  graderBy: Types.ObjectId;
+  gtradedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +35,24 @@ const submissionSchema = new Schema<ISubmission>(
       trim: true,
       minlength: 1,
       maxlength: 20000,
+    },
+    score: {
+      type: Number,
+      min: 0,
+      max: 100,
+    },
+    feedback: {
+      type: String,
+      trim: true,
+      maxlength: 2000,
+    },
+    graderBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    gtradedAt: {
+      type: Date,
     },
     submittedAt: {
       type: Date,

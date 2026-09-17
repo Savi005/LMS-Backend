@@ -1,9 +1,11 @@
+import { GradeSubmissionDto } from "../../dtos/grade-submission.dto";
 import {
   CreateSubmissionDto,
   SubmissionResponseDto,
 } from "../../dtos/submission.dto";
 
 import { AuthenticatedUser } from "../../types/authenticated-user";
+import { UserRole } from "../../types/role";
 
 export interface ISubmissionService {
   submitAssignment(
@@ -21,4 +23,10 @@ export interface ISubmissionService {
     assignmentId: string,
     user: AuthenticatedUser,
   ): Promise<SubmissionResponseDto[]>;
+  gradeSubmission(
+    teacherId:string,
+    role:UserRole,
+    submissionId:string,
+    data:GradeSubmissionDto
+):Promise<SubmissionResponseDto>;
 }

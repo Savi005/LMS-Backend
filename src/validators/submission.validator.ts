@@ -10,3 +10,14 @@ export const createSubmissionSchema = z.object({
       "Submission content cannot exceed 20000 characters",
     ),
 });
+
+export const gradeSubmissionSchema = z.object({
+  score: z
+        .number()
+        .min(0),
+  feedback: z
+    .string()
+    .trim()
+    .max(2000, "Feedback cannot exceed 2000 characters")
+    .optional(),
+});
