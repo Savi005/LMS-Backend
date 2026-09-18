@@ -15,6 +15,7 @@ import type { ILessonService } from "../interfaces/services/lesson.service.inter
 import { NotFoundError } from "../errors/NotFoundError";
 import { ForbiddenError } from "../errors/ForbiddenError";
 import { ConflictError } from "../errors/ConflictError";
+import { LessonDocument } from "../models/lesson.model";
 
 export interface AuthenticatedUser {
   userId: string;

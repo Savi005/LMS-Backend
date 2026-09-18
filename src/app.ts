@@ -13,6 +13,15 @@ import { EnrollmentController } from "./controllers/enrollment.controller";
 import { EnrollmentService } from "./services/enrollment.service";
 import { EnrollmentRepository } from "./repositories/enrollment.repository";
 import { CourseRepository } from "./repositories/course.repository";
+import { NotificationRepository } from "./repositories/notification.repository";
+import { NotificationService } from "./services/notification.service";
+import { createNotificationRoutes } from "./routes/notification.routes";
+import { NotificationController } from "./controllers/notification.controller";
+import { createSubmissionRoutes } from "./routes/submission.routes";
+import { SubmissionController } from "./controllers/submission.controller";
+import { SubmissionService } from "./services/submission.service";
+import { SubmissionRepository } from "./repositories/submission.repository";
+import { AssignmentRepository } from "./repositories/assignment.repository";
 
 const app = express();
 
@@ -26,6 +35,23 @@ const courseRepository = new CourseRepository();
 const enrollmentService = new EnrollmentService(enrollmentRepository, courseRepository);
 const enrollmentController = new EnrollmentController(enrollmentService);
 
+// Initialize notification controller dependencies
+const notificationRepository = new NotificationRepository();
+const notificationService = new NotificationService(notificationRepository);
+const notificationController = new NotificationController(notificationService);
+
+// Initialize submission controller dependencies
+const submissionRepository = new SubmissionRepository();
+const assignmentRepository = new AssignmentRepository();
+const submissionService = new SubmissionService(
+  submissionRepository,
+  assignmentRepository,
+  courseRepository,
+  enrollmentRepository,
+  notificationService,
+);
+const submissionController = new SubmissionController(submissionService);
+
 app.use("/", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
@@ -33,6 +59,11 @@ app.use("/api", lessonRoutes);
 app.use("/api", assignmentRoutes);
 app.use("/api/course-categories", courseCategoryRoutes);
 app.use("/api", createEnrollmentRoutes(enrollmentController));
+app.use("/api", createSubmissionRoutes(submissionController));
+app.use(
+  "/api/notifications",
+  createNotificationRoutes(notificationController),
+);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

@@ -1,3 +1,4 @@
+
 import {
   CreateSubmissionDto,
   SubmissionResponseDto,
@@ -35,8 +36,18 @@ import { ForbiddenError } from "../errors/ForbiddenError";
 import { ValidationError } from "../errors/ValidationError";
 
 import { logger } from "../config/logger";
+
 import { UserRole } from "../types/role";
+
 import { GradeSubmissionDto } from "../dtos/grade-submission.dto";
+
+import {
+  INotificationService,
+} from "../interfaces/services/notification.service.interface";
+
+import {
+  NotificationType,
+} from "../models/notification.model";
 
 export class SubmissionService
   implements ISubmissionService
@@ -46,6 +57,7 @@ export class SubmissionService
     private readonly assignmentRepository: IAssignmentRepository,
     private readonly courseRepository: ICourseRepository,
     private readonly enrollmentRepository: IEnrollmentRepository,
+    private readonly notificationService: INotificationService,
   ) {}
 
   async submitAssignment(
@@ -53,6 +65,7 @@ export class SubmissionService
     data: CreateSubmissionDto,
     user: AuthenticatedUser,
   ): Promise<SubmissionResponseDto> {
+
     this.ensureStudent(user);
 
     const assignment =
@@ -66,7 +79,7 @@ export class SubmissionService
       );
     }
 
-    /*
+    /**
      * Students can only submit to published
      * assignments.
      */
@@ -87,7 +100,7 @@ export class SubmissionService
       );
     }
 
-    /*
+    /**
      * Course must also be published.
      */
     if (course.status !== "published") {
@@ -96,14 +109,15 @@ export class SubmissionService
       );
     }
 
-    /*
+    /**
      * Student must have an active enrollment.
      */
     const enrollment =
-      await this.enrollmentRepository.findByStudentIdAndCourseId(
-        user.userId,
-        assignment.courseId.toString(),
-      );
+      await this.enrollmentRepository
+        .findByStudentIdAndCourseId(
+          user.userId,
+          assignment.courseId.toString(),
+        );
 
     if (!enrollment) {
       throw new ForbiddenError(
@@ -117,7 +131,7 @@ export class SubmissionService
       );
     }
 
-    /*
+    /**
      * MVP rule:
      * submissions after the deadline are rejected.
      */
@@ -167,6 +181,7 @@ export class SubmissionService
     assignmentId: string,
     user: AuthenticatedUser,
   ): Promise<SubmissionResponseDto> {
+
     this.ensureStudent(user);
 
     const assignment =
@@ -228,6 +243,7 @@ export class SubmissionService
     assignmentId: string,
     user: AuthenticatedUser,
   ): Promise<SubmissionResponseDto[]> {
+
     this.ensureTeacherOrAdmin(user);
 
     const assignment =
@@ -252,7 +268,7 @@ export class SubmissionService
       );
     }
 
-    /*
+    /**
      * Admin bypasses ownership.
      */
     if (user.role !== "admin") {
@@ -268,16 +284,147 @@ export class SubmissionService
 
     const submissions =
       await this.submissionRepository
-        .findByAssignmentId(assignmentId);
+        .findByAssignmentId(
+          assignmentId,
+        );
 
     return submissions.map((submission) =>
       this.toResponseDto(submission),
     );
   }
 
+  async gradeSubmission(
+    userId: string,
+    role: UserRole,
+    submissionId: string,
+    data: GradeSubmissionDto,
+  ): Promise<SubmissionResponseDto> {
+
+    /**
+     * Only teachers and admins can grade.
+     */
+    if (
+      role !== "teacher" &&
+      role !== "admin"
+    ) {
+      throw new ForbiddenError(
+        "Only teachers or admins can grade submissions",
+      );
+    }
+
+    const submission =
+      await this.submissionRepository
+        .findById(submissionId);
+
+    if (!submission) {
+      throw new NotFoundError(
+        "Submission not found",
+      );
+    }
+
+    const assignment =
+      await this.assignmentRepository
+        .findById(
+          submission.assignmentId.toString(),
+        );
+
+    if (!assignment) {
+      throw new NotFoundError(
+        "Assignment not found",
+      );
+    }
+
+    const course =
+      await this.courseRepository
+        .findById(
+          assignment.courseId.toString(),
+        );
+
+    if (!course) {
+      throw new NotFoundError(
+        "Course not found",
+      );
+    }
+
+    /**
+     * Teacher can only grade submissions
+     * from their own course.
+     *
+     * Admin bypasses ownership.
+     */
+    if (
+      role === "teacher" &&
+      course.teacherId.toString() !== userId
+    ) {
+      throw new ForbiddenError(
+        "You cannot grade submissions from this course",
+      );
+    }
+
+    /**
+     * Score cannot exceed assignment maximum.
+     */
+    if (
+      data.score > assignment.maxScore
+    ) {
+      throw new ValidationError(
+        "Score cannot exceed maximum score",
+      );
+    }
+
+    const updatedSubmission =
+      await this.submissionRepository
+        .gradeSubmission(
+          submissionId,
+          {
+            score: data.score,
+            feedback: data.feedback,
+            gradedBy: userId,
+            gradedAt: new Date(),
+          },
+        );
+
+    if (!updatedSubmission) {
+      throw new NotFoundError(
+        "Submission not found",
+      );
+    }
+
+    /**
+     * Notify the student after successful grading.
+     *
+     * Notification failure should not undo
+     * the successful grading operation.
+     */
+    try {
+      await this.notificationService.createNotification({
+        recipientId:
+          submission.studentId.toString(),
+        type: "SUBMISSION_GRADED",
+        title: "Assignment graded",
+        message: "Your assignment has been graded.",
+      });
+    } catch (error) {
+      logger.error(
+        {
+          submissionId,
+          studentId:
+            submission.studentId.toString(),
+          error,
+        },
+        "Failed to create grading notification",
+      );
+    }
+
+    return this.toResponseDto(
+      updatedSubmission,
+    );
+  }
+
   private ensureStudent(
     user: AuthenticatedUser,
   ): void {
+
     if (user.role !== "student") {
       throw new ForbiddenError(
         "Only students can submit assignments",
@@ -288,6 +435,7 @@ export class SubmissionService
   private ensureTeacherOrAdmin(
     user: AuthenticatedUser,
   ): void {
+
     if (
       user.role !== "teacher" &&
       user.role !== "admin"
@@ -302,6 +450,7 @@ export class SubmissionService
     courseId: string,
     user: AuthenticatedUser,
   ): Promise<void> {
+
     const enrollment =
       await this.enrollmentRepository
         .findByStudentIdAndCourseId(
@@ -321,159 +470,31 @@ export class SubmissionService
       );
     }
   }
-  async gradeSubmission(
-    userId:string,
-    role:UserRole,
-    submissionId:string,
-    data:GradeSubmissionDto
-)
-{
-
-
-if(
-    role !== "teacher" &&
-    role !== "admin"
-){
-
-    throw new ForbiddenError(
-        "Only teachers or admins can grade submissions"
-    );
-
-}
-
-
-
-const submission =
-    await this.submissionRepository
-        .findById(submissionId);
-
-
-
-if(!submission){
-
-    throw new NotFoundError(
-        "Submission not found"
-    );
-
-}
-
-
-
-const assignment =
-    await this.assignmentRepository
-        .findById(
-            submission.assignmentId.toString()
-        );
-
-
-
-if(!assignment){
-
-    throw new NotFoundError(
-        "Assignment not found"
-    );
-
-}
-
-
-
-const course =
-    await this.courseRepository
-        .findById(
-            assignment.courseId.toString()
-        );
-
-
-
-if(!course){
-
-    throw new NotFoundError(
-        "Course not found"
-    );
-
-}
-
-
-
-// ownership check
-
-if(
-    role === "teacher" &&
-    course.teacherId.toString() !== userId
-){
-
-    throw new ForbiddenError(
-        "You cannot grade submissions from this course"
-    );
-
-}
-
-
-
-// score validation
-
-if(
-    data.score > assignment.maxScore
-){
-
-    throw new ValidationError(
-        "Score cannot exceed maximum score"
-    );
-
-}
-
-
-
-const updatedSubmission =
-    await this.submissionRepository
-        .gradeSubmission(
-
-            submissionId,
-
-            {
-                score:data.score,
-
-                feedback:data.feedback,
-
-                gradedBy:userId,
-
-                gradedAt:new Date()
-            }
-
-        );
-
-
-
-if(!updatedSubmission){
-
-    throw new NotFoundError(
-        "Submission not found"
-    );
-
-}
-
-
-
-return this.toResponseDto(updatedSubmission);
-
-
-}
 
   private toResponseDto(
     submission: SubmissionDocument,
   ): SubmissionResponseDto {
+
     return {
       id: submission._id.toString(),
+
       assignmentId:
         submission.assignmentId.toString(),
+
       studentId:
         submission.studentId.toString(),
+
       content: submission.content,
-      submittedAt: submission.submittedAt,
-      createdAt: submission.createdAt,
-      updatedAt: submission.updatedAt,
+
+      submittedAt:
+        submission.submittedAt,
+
+      createdAt:
+        submission.createdAt,
+
+      updatedAt:
+        submission.updatedAt,
     };
   }
-  
-
 }
+
