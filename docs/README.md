@@ -96,7 +96,6 @@ Use a valid MongoDB ObjectId for values such as `:courseId`, `:assignmentId`, an
 | POST | `/api/course-categories` | `{ "name": "Programming", "description": "Programming courses" }` (admin) |
 | GET | `/api/course-categories` | None |
 | PATCH | `/api/course-categories/:categoryId` | `{ "name": "Software Development" }` (admin) |
-| DELETE | `/api/course-categories/:categoryId` | None (admin) |
 | POST | `/api/courses` | `{ "title": "TypeScript Basics", "description": "Learn TypeScript fundamentals", "categoryId": "..." }` (teacher) |
 | GET | `/api/courses` | None |
 | GET | `/api/courses/:courseId` | None |
@@ -111,14 +110,11 @@ Use a valid MongoDB ObjectId for values such as `:courseId`, `:assignmentId`, an
 | GET | `/api/courses/:courseId/lessons` | None |
 | GET | `/api/lessons/:lessonId` | None |
 | PATCH | `/api/lessons/:lessonId` | `{ "content": "Updated lesson content" }` (teacher/admin) |
-| DELETE | `/api/lessons/:lessonId` | None (teacher/admin) |
 | POST | `/api/courses/:courseId/assignments` | `{ "title": "First task", "description": "Complete the task", "dueDate": "2026-12-31", "maxScore": 100 }` (teacher) |
 | GET | `/api/courses/:courseId/assignments` | None |
 | GET | `/api/assignments/:assignmentId` | None |
 | PATCH | `/api/assignments/:assignmentId` | `{ "maxScore": 50 }` (teacher) |
-| DELETE | `/api/assignments/:assignmentId` | None (teacher) |
 | PATCH | `/api/assignments/:assignmentId/publish` | None |
-| PATCH | `/api/assignments/:assignmentId/unpublish` | None |
 
 ### Enrollments and Submissions
 
@@ -126,7 +122,6 @@ Use a valid MongoDB ObjectId for values such as `:courseId`, `:assignmentId`, an
 | --- | --- | --- |
 | POST | `/api/courses/:courseId/enroll` | None |
 | GET | `/api/enrollments/me` | None |
-| DELETE | `/api/enrollments/:enrollmentId` | None |
 | POST | `/api/assignments/:assignmentId/submissions` | `{ "content": "My submitted answer" }` |
 | GET | `/api/assignments/:assignmentId/submissions/me` | None |
 | GET | `/api/assignments/:assignmentId/submissions` | None |
