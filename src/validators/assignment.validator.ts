@@ -42,7 +42,7 @@ export const updateAssignmentSchema = z
     maxScore: z
       .number()
       .positive("Max score must be greater than 0")
-      .max(1000)
+      .max(100, "Max score cannot exceed 100")
       .optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {

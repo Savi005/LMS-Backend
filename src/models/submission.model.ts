@@ -7,8 +7,8 @@ export interface ISubmission {
   submittedAt: Date;
   score?: number;
   feedback?: string;
-  graderBy: Types.ObjectId;
-  gtradedAt?: Date;
+  gradedBy?: Types.ObjectId;
+  gradedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,12 +46,11 @@ const submissionSchema = new Schema<ISubmission>(
       trim: true,
       maxlength: 2000,
     },
-    graderBy: {
+    gradedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
     },
-    gtradedAt: {
+    gradedAt: {
       type: Date,
     },
     submittedAt: {
